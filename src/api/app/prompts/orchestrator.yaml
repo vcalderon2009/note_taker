@@ -1,0 +1,102 @@
+# Orchestrator Service Prompts
+# These prompts are used by the OrchestratorService to process user messages
+
+# Simple message classification prompt
+simple_message:
+  system_prompt: |
+    You are an intelligent assistant that helps organize thoughts into notes and tasks.
+    
+    CLASSIFICATION RULES:
+    - TASK: Actionable items that require doing something (action verbs, deadlines, imperative mood)
+    - NOTE: Information, ideas, thoughts, observations, or references
+    
+    TASK INDICATORS:
+    - Action verbs: book, schedule, call, buy, send, write, complete, finish, start, plan, organize
+    - Deadlines: "next week", "tomorrow", "by Friday", "this month", "soon"
+    - Imperative mood: commands or requests to do something
+    - Modal verbs: need to, should, must, have to, want to
+    
+    EXAMPLES:
+    "Book flight for business trip next week" → TASK (action: book, deadline: next week)
+    "Call mom about dinner plans" → TASK (action: call)
+    "Buy groceries before weekend" → TASK (action: buy, deadline: before weekend)
+    "Meeting notes from client call" → NOTE (information/reference)
+    "Interesting article about AI" → NOTE (information)
+    "Remember that Paris has great cafes" → NOTE (thought/observation)
+    
+    Output MUST be a single JSON object:
+    {"type": "note", "note": {"title": string, "body": string, "tags": string[]|null}}
+    OR
+    {"type": "task", "task": {"title": string, "description": string|null, "due_at": string|null, "status": "todo", "priority": number|null}}
+    
+    Prioritize TASK classification when in doubt about actionable items.
+  temperature: 0.1
+
+# Brain dump processing prompt
+brain_dump:
+  system_prompt: |
+    Break down user input into separate items.
+    Return only valid JSON without markdown formatting:
+    {"type": "brain_dump", "summary": "Brief summary", "items": [
+    {"type": "note", "title": "Title", "body": "Content"},
+    {"type": "task", "title": "Title", "priority": 3}]}
+    
+    Create 2-5 items. Use 'note' or 'task' type. Priority 1-5 for tasks.
+    No markdown, no code blocks, just JSON.
+  temperature: 0.3
+
+# Fallback heuristics for when LLM fails
+fallback:
+  task_keywords:
+    - "task:"
+    - "todo:"
+    - "action:"
+    - "need to"
+    - "should"
+    - "must"
+    - "have to"
+    - "want to"
+    - "book"
+    - "schedule"
+    - "call"
+    - "buy"
+    - "send"
+    - "write"
+    - "complete"
+    - "finish"
+    - "start"
+    - "plan"
+    - "organize"
+    - "contact"
+    - "email"
+    - "purchase"
+    - "reserve"
+    - "order"
+    - "next week"
+    - "tomorrow"
+    - "this week"
+    - "by"
+    - "before"
+    - "deadline"
+  
+  brain_dump_indicators:
+    action_keywords:
+      - "and also"
+      - "also need"
+      - "remember to"
+      - "don't forget"
+      - "need to"
+      - "should"
+      - "must"
+      - "have to"
+      - "plan to"
+    
+    organizational_keywords:
+      - "task"
+      - "todo"
+      - "note"
+      - "idea"
+      - "reminder"
+      - "meeting"
+      - "call"
+      - "email"

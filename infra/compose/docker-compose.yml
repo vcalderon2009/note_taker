@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: note_user
+      POSTGRES_PASSWORD: note_pass
+      POSTGRES_DB: note_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  api:
+    build:
+      context: ../../
+      dockerfile: src/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://note_user:note_pass@db:5432/note_db
+      OLLAMA_HOST: http://ollama:11434
+      PORT: 8000
+    depends_on:
+      - db
+      - ollama
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ../../
+      dockerfile: src/frontend/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+  ollama_data:
+
+
