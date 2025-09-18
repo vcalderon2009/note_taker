@@ -24,7 +24,7 @@ interface SidebarContainerProps {
   onNewConversation?: () => void;
 }
 
-type TabType = 'conversations' | 'notes' | 'tasks';
+type TabType = 'dashboard' | 'conversations' | 'notes' | 'tasks';
 
 export function SidebarContainer({ 
   className, 
@@ -36,7 +36,7 @@ export function SidebarContainer({
   onConversationSelect,
   onNewConversation
 }: SidebarContainerProps) {
-  const [activeTab, setActiveTab] = React.useState<TabType>('conversations');
+  const [activeTab, setActiveTab] = React.useState<TabType>('dashboard');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [showCompleted, setShowCompleted] = React.useState(false);
   
@@ -146,6 +146,18 @@ export function SidebarContainer({
           <button
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200',
+              activeTab === 'dashboard' 
+                ? 'bg-card text-foreground shadow-md border border-border/50' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+            )}
+            onClick={() => handleTabChange('dashboard')}
+          >
+            <span className="h-3.5 w-3.5 rounded-sm bg-gradient-to-br from-primary to-accent inline-block" />
+            <span>Dashboard</span>
+          </button>
+          <button
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200',
               activeTab === 'conversations' 
                 ? 'bg-card text-foreground shadow-md border border-border/50' 
                 : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
@@ -232,7 +244,49 @@ export function SidebarContainer({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'conversations' ? (
+        {activeTab === 'dashboard' ? (
+          <div className="p-6 space-y-6">
+            {/* Upcoming Tasks */}
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4">
+              <h3 className="text-sm font-semibold mb-3">Upcoming Tasks</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {tasks.filter(t => t.status !== 'completed').slice(0, 5).length === 0 ? (
+                  <p>No upcoming tasks</p>
+                ) : (
+                  tasks.filter(t => t.status !== 'completed').slice(0, 5).map(t => (
+                    <div key={t.id} className="flex items-center justify-between">
+                      <span className="truncate mr-2">{t.title}</span>
+                      {t.due_at && <span className="text-xs">Due {new Date(t.due_at).toLocaleDateString()}</span>}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Recent Notes */}
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4">
+              <h3 className="text-sm font-semibold mb-3">Recent Notes</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {notes.slice(0, 5).length === 0 ? (
+                  <p>No recent notes</p>
+                ) : (
+                  notes.slice(0, 5).map(n => (
+                    <div key={n.id} className="truncate">{n.title}</div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Category Breakdown */}
+            <div className="rounded-xl border border-border/50 bg-card/40 p-4">
+              <h3 className="text-sm font-semibold mb-3">Top Categories</h3>
+              <div className="space-y-2">
+                {/* Placeholder for now - Phase 2: stats endpoint */}
+                <p className="text-sm text-muted-foreground">Coming soon</p>
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'conversations' ? (
           <ConversationList
             currentConversationId={currentConversationId || null}
             onConversationSelect={onConversationSelect || (() => {})}
