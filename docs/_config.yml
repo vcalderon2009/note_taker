@@ -1,0 +1,140 @@
+# GitHub Pages configuration for Jekyll
+title: Note-Taker AI Assistant
+description: An intelligent, conversational AI assistant that acts as your second brain
+author: Note-Taker AI Team
+email: contact@note-taker-ai.com
+url: https://your-username.github.io
+baseurl: /note_taker
+
+# Jekyll configuration
+markdown: kramdown
+highlighter: rouge
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Site settings
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - src/
+  - infra/
+  - scripts/
+  - pre-planning/
+  - logs/
+  - Makefile
+  - docker-compose*.yml
+  - .env*
+  - .gitignore
+  - .gitattributes
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Getting Started
+    url: /getting-started
+  - title: Architecture
+    url: /architecture
+  - title: API Reference
+    url: /api-reference
+  - title: Development
+    url: /development
+  - title: Deployment
+    url: /deployment
+  - title: Features
+    url: /features/
+  - title: Advanced
+    url: /advanced/
+
+# Collections
+collections:
+  features:
+    output: true
+    permalink: /features/:name/
+  advanced:
+    output: true
+    permalink: /advanced/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "features"
+    values:
+      layout: "default"
+  - scope:
+      path: ""
+      type: "advanced"
+    values:
+      layout: "default"
+
+# SEO
+seo:
+  type: "WebSite"
+  name: "Note-Taker AI Assistant"
+  description: "An intelligent, conversational AI assistant that acts as your second brain"
+  url: "https://your-username.github.io/note_taker"
+  image: "/assets/logo.png"
+  twitter:
+    card: "summary_large_image"
+    creator: "@note_taker_ai"
+  facebook:
+    app_id: "your_facebook_app_id"
+    publisher: "https://facebook.com/note_taker_ai"
+
+# Social links
+social:
+  - name: GitHub
+    url: https://github.com/your-username/note_taker
+  - name: Twitter
+    url: https://twitter.com/note_taker_ai
+  - name: LinkedIn
+    url: https://linkedin.com/company/note_taker_ai
+
+# Analytics
+google_analytics: "your_google_analytics_id"
+google_tag_manager: "your_google_tag_manager_id"
+
+# Search
+search: true
+search_index: true
+
+# Comments
+disqus:
+  shortname: "note_taker_ai"
+
+# Pagination
+paginate: 10
+paginate_path: "/page:num/"
+
+# Timezone
+timezone: "UTC"
+
+# Encoding
+encoding: "utf-8"
+
+# Sass
+sass:
+  sass_dir: _sass
+  style: compressed
+
+# Build settings
+incremental: false
+safe: false
+lsi: false
+excerpt_separator: "\n\n"
+keep_files: []
+limit_posts: 0
+future: true
+unpublished: false
