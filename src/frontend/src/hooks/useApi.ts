@@ -9,9 +9,8 @@ import {
 import type {
   ConversationCreateRequest,
   MessageRequest,
-  NoteCreateRequest,
+  NoteUpdateRequest,
   TaskUpdateRequest,
-  CategoryCreateRequest,
   CategoryUpdateRequest,
 } from '@/types/api';
 
@@ -119,7 +118,7 @@ export function useUpdateNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: number; updates: Partial<NoteCreateRequest> }) =>
+    mutationFn: ({ id, updates }: { id: number; updates: NoteUpdateRequest }) =>
       noteService.update(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notes });

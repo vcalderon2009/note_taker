@@ -15,6 +15,7 @@ from .routes.messages import router as messages_router
 from .routes.notes import router as notes_router
 from .routes.tasks import router as tasks_router
 from .routes.categories import router as categories_router
+from .routes.classification import router as classification_router
 
 
 @asynccontextmanager
@@ -78,12 +79,13 @@ app.add_middleware(
     endpoint_configs=endpoint_configs,
 )
 
-app.include_router(health_router)
+app.include_router(health_router)  # Comprehensive health at /api/health and /api/health/ready
 app.include_router(conversations_router)
 app.include_router(messages_router)
 app.include_router(notes_router)
 app.include_router(tasks_router)
 app.include_router(categories_router)
+app.include_router(classification_router)
 
 
 if __name__ == "__main__":

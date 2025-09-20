@@ -1,0 +1,16 @@
+[Unit]
+Description=Note-Taker AI System
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/path/to/note_taker
+ExecStart=/usr/bin/make -C /path/to/note_taker start-bg
+ExecStop=/usr/bin/make -C /path/to/note_taker stop
+TimeoutStartSec=600
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

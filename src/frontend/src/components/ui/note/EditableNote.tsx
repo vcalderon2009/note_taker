@@ -4,12 +4,15 @@ import * as React from 'react';
 import { Edit3, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
+import { CategoryPicker } from '@/components/ui/category/CategoryPicker';
+import { CategoryDisplay } from '@/components/ui/category/CategoryDisplay';
+import { useCategories } from '@/hooks/useApi';
 import { cn } from '@/lib/utils';
 import type { Note } from '@/types/api';
 
 interface EditableNoteProps {
   note: Note;
-  onSave: (noteId: number, updates: { title?: string; body?: string }) => void;
+  onSave: (noteId: number, updates: { title?: string; body?: string; category_id?: number | null }) => void;
   className?: string;
 }
 
@@ -17,9 +20,12 @@ export function EditableNote({ note, onSave, className }: EditableNoteProps) {
   const [isEditing, setIsEditing] = React.useState(false);
   const [title, setTitle] = React.useState(note.title);
   const [body, setBody] = React.useState(note.body);
+  const [categoryId, setCategoryId] = React.useState(note.category_id);
+  const { data: categories = [] } = useCategories();
+  const category = categories.find(c => c.id === note.category_id);
 
   const handleSave = () => {
-    const updates: { title?: string; body?: string } = {};
+    const updates: { title?: string; body?: string; category_id?: number | null } = {};
     
     if (title !== note.title) {
       updates.title = title;
@@ -27,6 +33,10 @@ export function EditableNote({ note, onSave, className }: EditableNoteProps) {
     
     if (body !== note.body) {
       updates.body = body;
+    }
+
+    if (categoryId !== note.category_id) {
+      updates.category_id = categoryId;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -39,6 +49,7 @@ export function EditableNote({ note, onSave, className }: EditableNoteProps) {
   const handleCancel = () => {
     setTitle(note.title);
     setBody(note.body);
+    setCategoryId(note.category_id);
     setIsEditing(false);
   };
 
@@ -96,6 +107,16 @@ export function EditableNote({ note, onSave, className }: EditableNoteProps) {
             placeholder="Note content..."
           />
           
+          {/* Category Picker */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Category</label>
+            <CategoryPicker
+              selectedCategoryId={categoryId}
+              onCategoryChange={setCategoryId}
+              placeholder="Select category..."
+            />
+          </div>
+          
           {/* Edit Actions */}
           <div className="flex items-center gap-2 justify-end">
             <Button
@@ -126,6 +147,13 @@ export function EditableNote({ note, onSave, className }: EditableNoteProps) {
           <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
             {note.body}
           </p>
+        </div>
+      )}
+
+      {/* Category Display */}
+      {category && (
+        <div className="pt-2">
+          <CategoryDisplay category={category} />
         </div>
       )}
 

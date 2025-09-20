@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from ..db import get_db
-from ..models.orm import Conversation, Message, User
+from ..models.orm import Conversation, Message, User, Note, Task
 from ..models.schemas import ConversationCreate, ConversationOut, MessageOut
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
@@ -117,7 +117,7 @@ async def delete_conversation(
     conversation_id: int,
     db: Session = Depends(get_db)
 ):
-    """Delete a conversation and all its messages."""
+    """Delete a conversation and all its related data."""
     conversation = db.query(Conversation)\
         .filter(Conversation.id == conversation_id)\
         .first()
@@ -125,17 +125,29 @@ async def delete_conversation(
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
-    # Delete all messages first
+    user_id = conversation.user_id
+    
+    # Delete all related data first (in order of dependencies)
+    # 1. Delete all messages
     db.query(Message)\
         .filter(Message.conversation_id == conversation_id)\
         .delete()
     
-    # Delete the conversation
+    # 2. Delete all notes that reference this conversation
+    db.query(Note)\
+        .filter(Note.conversation_id == conversation_id)\
+        .delete()
+    
+    # 3. Delete all tasks that reference this conversation
+    db.query(Task)\
+        .filter(Task.conversation_id == conversation_id)\
+        .delete()
+    
+    # 4. Finally delete the conversation
     db.delete(conversation)
     db.commit()
 
     # Ensure at least one conversation exists for the user
-    user_id = conversation.user_id
     remaining = db.query(Conversation).filter(Conversation.user_id == user_id).count()
     if remaining == 0:
         new_conv = Conversation(user_id=user_id, title="New Conversation")

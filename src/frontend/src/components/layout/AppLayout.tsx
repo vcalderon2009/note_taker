@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { SidebarContainer } from '@/components/sidebar/SidebarContainer';
 import { cn } from '@/lib/utils';
@@ -70,7 +70,7 @@ export function AppLayout({ className }: AppLayoutProps) {
     }
   }, []);
 
-  const handleNoteSave = React.useCallback((noteId: number, updates: { title?: string; body?: string }) => {
+  const handleNoteSave = React.useCallback((noteId: number, updates: { title?: string; body?: string; category_id?: number | null }) => {
     updateNoteMutation.mutate({ id: noteId, updates });
   }, [updateNoteMutation]);
 
@@ -86,7 +86,7 @@ export function AppLayout({ className }: AppLayoutProps) {
   }
 
   return (
-    <div className={cn('flex h-screen bg-background relative overflow-hidden', className)}>
+    <div className={cn('flex h-full bg-background relative overflow-hidden', className)}>
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       

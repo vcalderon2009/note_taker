@@ -17,6 +17,27 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/usr/bin/bash", "-c"]
+    command: >
+      "
+        echo 'Waiting for Ollama to be ready...' &&
+        sleep 30 &&
+        ollama pull deepseek-r1:8b &&
+        ollama pull llama3.2:1b &&
+        echo 'Models pulled successfully!'
+      "
+    restart: "no"
 
   api:
     build:
@@ -28,7 +49,7 @@ services:
       PORT: 8000
     depends_on:
       - db
-      - ollama
+      - ollama-init
     ports:
       - "8000:8000"
 

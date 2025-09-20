@@ -3,8 +3,12 @@
 import * as React from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
+import { ThinkingIndicator, THINKING_STEPS } from './ThinkingIndicator';
+import { ThinkingStepsCollapsible } from './ThinkingStepsCollapsible';
+import { MessageClassifier } from '../../services/messageClassifier';
 import { cn, generateId } from '@/lib/utils';
 import { useSendMessage, useConversationMessages } from '@/hooks/useApi';
+import { useThinkingSteps } from '@/hooks/useThinkingSteps';
 import type { Message } from '@/types/api';
 import type { MessageHandler } from '@/types/ui';
 
@@ -13,15 +17,35 @@ interface ChatContainerProps {
   className?: string;
 }
 
+interface CompletedThinking {
+  id: string;
+  steps: import('./ThinkingIndicator').ThinkingStep[];
+  stepType: string;
+  messageId: number;
+}
+
 export function ChatContainer({ conversationId, className }: ChatContainerProps) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const [optimisticMessages, setOptimisticMessages] = React.useState<Message[]>([]);
+  const [completedThinkingSteps, setCompletedThinkingSteps] = React.useState<CompletedThinking[]>([]);
 
   // Fetch conversation messages
   const { data: messages = [], isLoading, error } = useConversationMessages(conversationId);
   
   // Send message mutation
   const sendMessageMutation = useSendMessage();
+  
+  // Thinking steps management
+  const {
+    steps,
+    currentStepId,
+    isThinking,
+    startThinking,
+    completeStep,
+    errorStep,
+    completeThinking,
+    resetThinking
+  } = useThinkingSteps();
 
   // Combine real messages with optimistic updates
   const allMessages = React.useMemo(() => {
@@ -47,6 +71,48 @@ export function ChatContainer({ conversationId, className }: ChatContainerProps)
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [allMessages]);
 
+  // Helper function to get step details
+  const getStepDetails = (stepId: string, messageText: string): string => {
+    switch (stepId) {
+      case 'analyze':
+        return `Processing "${messageText.substring(0, 50)}${messageText.length > 50 ? '...' : ''}"`;
+      case 'context':
+        return 'Reviewing conversation history...';
+      case 'intent':
+        return messageText.length > 100 ? 'Detected complex input (brain dump)' : 'Detected simple request';
+      case 'process':
+        return 'Structuring information...';
+      case 'create':
+        return 'Creating items...';
+      case 'extract':
+        return 'Identifying key points...';
+      case 'categorize':
+        return 'Organizing by category...';
+      case 'structure':
+        return 'Formatting notes...';
+      case 'tasks':
+        return 'Generating action items...';
+      case 'finalize':
+        return 'Finalizing organization...';
+      default:
+        return '';
+    }
+  };
+
+  // Helper function to format response (currently unused but kept for future use)
+  // const formatResponse = (result: { type: string; note?: { title: string }; task?: { title: string }; notes?: unknown[]; tasks?: unknown[] }): string => {
+  //   if (result.type === 'brain_dump') {
+  //     const noteCount = result.notes?.length || 0;
+  //     const taskCount = result.tasks?.length || 0;
+  //     return `✨ Organized your brain dump: Created ${noteCount} note${noteCount !== 1 ? 's' : ''} and ${taskCount} task${taskCount !== 1 ? 's' : ''}`;
+  //   } else if (result.type === 'note' && result.note) {
+  //     return `📝 Created note: "${result.note.title}"`;
+  //   } else if (result.type === 'task' && result.task) {
+  //     return `✅ Created task: "${result.task.title}"`;
+  //   }
+  //   return 'Processing complete!';
+  // };
+
   const handleSendMessage: MessageHandler = React.useCallback(async (messageText: string) => {
     const tempId = -Date.now(); // Negative ID for optimistic updates
     const idempotencyKey = generateId();
@@ -62,65 +128,114 @@ export function ChatContainer({ conversationId, className }: ChatContainerProps)
 
     setOptimisticMessages(prev => [...prev, optimisticUserMessage]);
 
-    // Add AI thinking indicator
-    const thinkingMessage: Message = {
-      id: tempId - 1,
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: '__THINKING__', // Special marker for thinking state
-      created_at: new Date().toISOString(),
-    };
+        // Use LLM-based classification instead of keyword matching
+        let stepType: keyof typeof THINKING_STEPS = 'MESSAGE_ANALYSIS';
+        // let classificationReasoning = '';
+    
+    try {
+      console.log('Classifying message with LLM:', messageText);
+      const classification = await MessageClassifier.classifyMessage(messageText);
+      stepType = classification.classification as keyof typeof THINKING_STEPS;
+      // classificationReasoning = classification.reasoning;
+      
+      console.log('LLM Classification result:', {
+        messageText: messageText.substring(0, 50) + '...',
+        classification: classification.classification,
+        confidence: classification.confidence,
+        reasoning: classification.reasoning
+      });
+    } catch (error) {
+      console.error('Classification failed, using fallback:', error);
+      // Fallback to simple heuristics if LLM classification fails
+      const isLongMessage = messageText.length > 100;
+      const hasMultipleItems = messageText.includes(' and ') || messageText.includes(',') || messageText.includes(';');
+      const isMeetingNotes = messageText.toLowerCase().includes('meeting') || messageText.toLowerCase().includes('notes');
+      
+      if (isLongMessage && (hasMultipleItems || isMeetingNotes)) {
+        stepType = 'BRAIN_DUMP';
+      } else if (messageText.toLowerCase().includes('task') || messageText.toLowerCase().includes('todo')) {
+        stepType = 'SIMPLE_TASK';
+      } else if (messageText.toLowerCase().includes('note') || messageText.toLowerCase().includes('remember')) {
+        stepType = 'SIMPLE_NOTE';
+      }
+      // classificationReasoning = 'Fallback classification due to LLM error';
+    }
 
-    setOptimisticMessages(prev => [...prev, thinkingMessage]);
+    // Start thinking process
+    startThinking(stepType);
 
     try {
-      // Send the message
-      const result = await sendMessageMutation.mutateAsync({
+      // Simulate thinking steps progression
+      const currentSteps = THINKING_STEPS[stepType];
+      const stepDuration = 1200; // 1.2 seconds per step
+      const totalThinkingTime = currentSteps.length * stepDuration + 500;
+      
+      // Start API call but don't wait for it
+      const apiPromise = sendMessageMutation.mutateAsync({
         conversationId,
         message: { text: messageText },
         idempotencyKey,
       });
-
-      // Replace thinking message with actual response
-      const assistantMessage: Message = {
-        id: tempId - 1,
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: `Created ${result.type}: ${result.type === 'note' ? result.note.title : result.task.title}`,
-        created_at: new Date().toISOString(),
+      
+      // Progress through steps
+      let stepIndex = 0;
+      const progressSteps = () => {
+        if (stepIndex < currentSteps.length) {
+          const step = currentSteps[stepIndex];
+          completeStep(step.id, getStepDetails(step.id, messageText));
+          stepIndex++;
+          
+          if (stepIndex < currentSteps.length) {
+            setTimeout(progressSteps, stepDuration);
+          }
+        }
       };
+      
+      // Start first step after a short delay
+      setTimeout(progressSteps, 500);
 
-      setOptimisticMessages(prev => 
-        prev.map(msg => msg.id === tempId - 1 ? assistantMessage : msg)
-      );
+      // Wait for both API response AND thinking time
+      const [/* result */] = await Promise.all([
+        apiPromise,
+        new Promise(resolve => setTimeout(resolve, totalThinkingTime))
+      ]);
 
-      // Clear optimistic messages after a delay (real messages will replace them)
-      setTimeout(() => {
-        setOptimisticMessages([]);
-      }, 2000);
+      // Save completed thinking steps before clearing
+      const completedThinking: CompletedThinking = {
+        id: generateId(),
+        steps: [...steps],
+        stepType,
+        messageId: tempId
+      };
+      setCompletedThinkingSteps(prev => [...prev, completedThinking]);
+
+      completeThinking();
+
+      // Clear optimistic messages since we have the real response
+      setOptimisticMessages([]);
+      resetThinking();
 
     } catch (error) {
-      // Replace thinking message with error message
+      console.error('Failed to send message:', error);
+      
+      // Complete thinking with error
+      if (currentStepId) {
+        errorStep(currentStepId, 'Processing failed');
+      }
+      completeThinking();
+
+      // Add error message
       const errorMessage: Message = {
         id: tempId - 1,
         conversation_id: conversationId,
         role: 'assistant',
-        content: '__ERROR__', // Special marker for error state
+        content: 'Sorry, I encountered an error processing your message. Please try again.',
         created_at: new Date().toISOString(),
       };
 
-      setOptimisticMessages(prev => 
-        prev.map(msg => msg.id === tempId - 1 ? errorMessage : msg)
-      );
-
-      console.error('Failed to send message:', error);
-
-      // Remove error message after delay
-      setTimeout(() => {
-        setOptimisticMessages(prev => prev.filter(msg => msg.id !== tempId - 1));
-      }, 5000);
+      setOptimisticMessages(prev => [...prev, errorMessage]);
     }
-  }, [conversationId, sendMessageMutation]);
+  }, [conversationId, sendMessageMutation, startThinking, completeStep, errorStep, completeThinking, resetThinking, steps, currentStepId]);
 
   if (error) {
     return (
@@ -180,8 +295,33 @@ export function ChatContainer({ conversationId, className }: ChatContainerProps)
             {allMessages.map((message) => (
               <div key={message.id} className="animate-fade-in">
                 <MessageBubble message={message} />
+                
+                {/* Show completed thinking steps for user messages */}
+                {message.role === 'user' && (
+                  <>
+                    {completedThinkingSteps
+                      .filter(thinking => thinking.messageId === message.id)
+                      .map(thinking => (
+                        <ThinkingStepsCollapsible
+                          key={thinking.id}
+                          steps={thinking.steps}
+                          stepType={thinking.stepType}
+                          isCompleted={true}
+                          className="mt-3"
+                        />
+                      ))}
+                  </>
+                )}
               </div>
             ))}
+            
+            {/* Active Thinking Indicator */}
+            <ThinkingIndicator
+              steps={steps}
+              isVisible={isThinking}
+              className="mx-auto max-w-2xl"
+            />
+            
             <div ref={messagesEndRef} />
           </>
         )}

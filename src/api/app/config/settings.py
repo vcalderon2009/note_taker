@@ -8,7 +8,11 @@ class Settings(BaseSettings):
     # Provide a safe default for tests/local without envs (file-based sqlite)
     database_url: str = "postgresql+psycopg://note_user:note_pass@db:5432/note_db"
     ollama_host: str = "http://ollama:11434"
-    ollama_model: str = "qwen2.5:7b"
+    ollama_model: str = "llama3.2:1b"
 
 
 settings = Settings()
+
+def get_settings() -> Settings:
+    """Get the settings instance."""
+    return settings

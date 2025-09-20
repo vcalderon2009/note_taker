@@ -93,6 +93,14 @@ export interface NoteCreateRequest {
   title: string;
   body: string;
   tags?: string[];
+  category_id?: number | null;
+}
+
+export interface NoteUpdateRequest {
+  title?: string;
+  body?: string;
+  tags?: string[];
+  category_id?: number | null;
 }
 
 export interface TaskCreateRequest {

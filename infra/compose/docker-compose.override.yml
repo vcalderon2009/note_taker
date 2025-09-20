@@ -1,0 +1,48 @@
+# Docker Compose Override for Development
+# This file provides additional configuration for development
+
+version: '3.8'
+
+services:
+  # Add development-specific configurations
+  api:
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    volumes:
+      - ../../src/api:/app:ro  # Mount source for development
+    command: >
+      sh -c "
+        echo 'Starting API in development mode...' &&
+        python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../../src/frontend:/app:ro  # Mount source for development
+    command: >
+      sh -c "
+        echo 'Starting frontend in development mode...' &&
+        npm run dev
+      "
+
+  # Add a development monitoring service
+  monitor:
+    image: curlimages/curl:latest
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo '🔍 Monitoring system health...' &&
+        while true; do
+          echo \"\$$(date): System Status Check\"
+          curl -s http://api:8000/api/health | jq -r '.status + \" | Models: \" + (.models | length | tostring) + \"/2\"' || echo 'API not responding'
+          sleep 30
+        done
+      "
+    restart: unless-stopped

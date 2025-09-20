@@ -22,6 +22,7 @@ class NoteUpdate(BaseModel):
     title: str | None = None
     body: str | None = None
     tags: list[str] | None = None
+    category_id: int | None = None
 
 
 class NoteOut(NoteCreate):
@@ -39,6 +40,15 @@ class TaskCreate(BaseModel):
     due_at: datetime | None = None
     status: str = Field(default="todo")
     priority: int | None = None
+
+
+class TaskUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    due_at: datetime | None = None
+    status: str | None = None
+    priority: int | None = None
+    category_id: int | None = None
 
 
 class TaskOut(TaskCreate):

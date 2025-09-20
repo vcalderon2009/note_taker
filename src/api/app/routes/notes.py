@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models.orm import Note
-from ..models.schemas import NoteCreate, NoteOut
+from ..models.schemas import NoteCreate, NoteOut, NoteUpdate
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
@@ -26,20 +25,39 @@ def create_note(payload: NoteCreate, db: Session = Depends(get_db)):
     return row
 
 
+@router.get("/{note_id}", response_model=NoteOut)
+def get_note(note_id: int, db: Session = Depends(get_db)):
+    """Get a specific note by ID."""
+    note = db.query(Note).filter(Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return note
+
+
 @router.patch("/{note_id}", response_model=NoteOut)
-def update_note(note_id: int, updates: Dict[str, Any], db: Session = Depends(get_db)):
+def update_note(note_id: int, payload: NoteUpdate, db: Session = Depends(get_db)):
+    """Update a note by ID."""
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     
-    # Update fields that are provided
-    if "title" in updates and updates["title"] is not None:
-        note.title = updates["title"]
-    if "body" in updates and updates["body"] is not None:
-        note.body = updates["body"]
-    if "tags" in updates:
-        note.tags = updates["tags"]
+    # Update only provided fields
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(note, field, value)
     
     db.commit()
     db.refresh(note)
     return note
+
+
+@router.delete("/{note_id}")
+def delete_note(note_id: int, db: Session = Depends(get_db)):
+    """Delete a note by ID."""
+    note = db.query(Note).filter(Note.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    
+    db.delete(note)
+    db.commit()
+    return {"message": "Note deleted successfully"}

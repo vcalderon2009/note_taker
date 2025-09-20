@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input/Input';
 import { Button } from '@/components/ui/button/Button';
 import { Note } from '@/types/api';
 import { useCategories } from '@/hooks/useApi';
-import { CategoryDisplay } from '../ui/category/CategoryDisplay';
 
 export interface NotesFilterState {
   searchQuery: string;

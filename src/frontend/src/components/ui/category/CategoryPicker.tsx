@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { useCategories, useCreateCategory } from '@/hooks/useApi';
-import type { Category } from '@/types/api';
 
 interface CategoryPickerProps {
   selectedCategoryId: number | null;

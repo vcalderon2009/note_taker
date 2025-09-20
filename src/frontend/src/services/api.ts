@@ -6,6 +6,7 @@ import type {
   MessageRequest,
   Note,
   NoteCreateRequest,
+  NoteUpdateRequest,
   Task,
   TaskCreateRequest,
   TaskUpdateRequest,
@@ -119,7 +120,7 @@ class ApiClient {
     return response.data;
   }
 
-  async updateNote(noteId: number, updates: Partial<NoteCreateRequest>): Promise<Note> {
+  async updateNote(noteId: number, updates: NoteUpdateRequest): Promise<Note> {
     const response = await this.client.patch(`/api/notes/${noteId}`, updates);
     return response.data;
   }
